@@ -1,27 +1,36 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-import bcrypt from "bcryptjs";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Relation } from "typeorm";
+import { Loan } from "./Loan";
 
-@Entity()
+@Entity({ name: 'Users' })
 export class User {
-    @PrimaryGeneratedColumn()
-    id!: number;
+    @PrimaryGeneratedColumn({ type: 'bigint' })
+    user_id!: number;
 
-    @Column({ unique: true })
+    @Column({ type: 'varchar', length: 50, unique: true, nullable: false })
     username!: string;
 
-    @Column()
-    password!: string;
+    @Column({ type: 'varchar', length: 256, nullable: false, select: false })
+    password_hash!: string;
 
-    @Column({ unique: true })
+    @Column({ type: 'varchar', length: 100, nullable: false })
+    full_name!: string;
+
+    @Column({ type: 'varchar', length: 100, unique: true, nullable: false })
     email!: string;
 
-    // Método para hashear la contraseña antes de guardar
-    async hashPassword(): Promise<void> {
-        this.password = await bcrypt.hash(this.password, 10);
-    }
+    @Column({
+        type: 'enum',
+        enum: ['admin', 'user'],
+        nullable: false,
+    })
+    role!: 'admin' | 'user';
 
-    // Método para comparar contraseñas
-    async checkPassword(password: string): Promise<boolean> {
-        return bcrypt.compare(password, this.password);
-    }
+    @CreateDateColumn({ type: 'timestamp' })
+    created_at!: Date;
+
+    @UpdateDateColumn({ type: 'timestamp' })
+    updated_at!: Date;
+
+    @OneToMany(() => Loan, loan => loan.user)
+    loans!: Relation<Loan[]>;
 }
