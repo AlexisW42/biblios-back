@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Relation } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Relation, BeforeInsert } from "typeorm";
 import { Loan } from "./Loan";
+import bcrypt from 'bcryptjs';
 
 @Entity({ name: 'Users' })
 export class User {
@@ -9,8 +10,10 @@ export class User {
     @Column({ type: 'varchar', length: 50, unique: true, nullable: false })
     username!: string;
 
-    @Column({ type: 'varchar', length: 256, nullable: false, select: false })
+    @Column({ type: 'varchar', length: 256, nullable: false, select: false, name: 'password_hash' })
     password_hash!: string;
+
+    password!: string;
 
     @Column({ type: 'varchar', length: 100, nullable: false })
     full_name!: string;
@@ -24,6 +27,16 @@ export class User {
         nullable: false,
     })
     role!: 'admin' | 'user';
+
+    @BeforeInsert()
+    async hashPassword() {
+        // Si se proporcionó una contraseña en la propiedad virtual...
+        if (this.password) {
+            const salt = await bcrypt.genSalt(10);
+            // ...la hasheamos y la guardamos en la propiedad que va a la base de datos.
+            this.password_hash = await bcrypt.hash(this.password, salt);
+        }
+    }
 
     @CreateDateColumn({ type: 'timestamp' })
     created_at!: Date;
