@@ -44,7 +44,13 @@ passport.deserializeUser(async (id: number, done) => {
   try {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOneBy({ user_id: id });
-    done(null, user);
+    if (user) {
+      // Excluimos el hash de la contraseña del objeto de usuario que se adjuntará a req.user
+      const { password_hash, ...userWithoutPassword } = user;
+      done(null, userWithoutPassword);
+    } else {
+      done(null, false);
+    }
   } catch (error) {
     done(error, null);
   }

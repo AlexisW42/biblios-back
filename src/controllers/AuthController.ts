@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../data-source";
 import { User } from "../entity/User";
-import dotenv from "dotenv";
 import { QueryFailedError } from "typeorm";
 import passport from "passport";
-
-dotenv.config();
+import bcrypt from "bcryptjs";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -18,16 +16,22 @@ export const register = async (req: Request, res: Response) => {
     }
 
     try {
-        const newUser = new User();
-        newUser.username = username;
-        newUser.email = email;
-        newUser.password = password;
-        newUser.full_name = fullName;
-        // Asignar un rol por defecto si no se proporciona, o validar el rol enviado
-        newUser.role = (role === 'admin' || role === 'user') ? role : 'user';
+        const hashedPassword = await bcrypt.hash(password, 10);
 
+        const newUser = userRepository.create({
+            username,
+            email,
+            password_hash: hashedPassword,
+            full_name: fullName,
+            // Asigna el rol de forma segura. Permite 'admin' si se especifica, si no, por defecto es 'user'.
+            role: role === 'admin' ? 'admin' : 'user',
+        });
+        
         await userRepository.save(newUser);
-        res.status(201).json({ message: "Usuario registrado exitosamente" });
+
+        // Nunca devuelvas la contraseña hasheada en la respuesta
+        const { password_hash, ...userResponse } = newUser;
+        res.status(201).json({ message: "Usuario registrado exitosamente", user: userResponse });
     } catch (error) {
         // Manejo de error específico para violación de constraint 'unique'
         if (error instanceof QueryFailedError && error.driverError?.code === '23505') {
@@ -36,20 +40,21 @@ export const register = async (req: Request, res: Response) => {
             const message = detail.includes('username') ? "El nombre de usuario ya existe." : "El correo electrónico ya está en uso.";
             return res.status(409).json({ message });
         }
-        return res.status(500).json({ message: "Error interno del servidor" });
+        console.error("Error en el registro:", error);
+        return res.status(500).json({ message: "Error interno del servidor al registrar el usuario." });
     }
 };
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate('local', (err: Error | null, user: User | false, info: { message: string }) => {
+    passport.authenticate('local', (err: Error | null, user: User | false, info?: { message: string }) => {
         if (err) { return next(err); }
-        if (!user) { return res.status(401).json({ message: info.message || "Credenciales inválidas" }); }
+        if (!user) { return res.status(401).json({ message: info?.message || "Credenciales inválidas" }); }
 
         req.login(user, (err: any) => {
             if (err) { return next(err); }
             // Excluimos el hash de la contraseña de la respuesta por seguridad
             const { password_hash, ...userResponse } = user;
-            return res.json({ success: true, user: userResponse });
+            return res.json({ message: "Login exitoso", user: userResponse, isAuthenticated: true });
         });
     })(req, res, next);
 };

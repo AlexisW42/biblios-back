@@ -3,8 +3,16 @@ import { register, login, logout } from "../controllers/AuthController";
 
 const router = Router();
 
-router.post("/api/register", register);
-router.post("/api/login", login);
-router.post("/api/logout", logout);
+router.post("/register", register);
+router.post("/login", login);
+router.post("/logout", logout);
+router.get('/refresh', (req, res) => {
+    if (req.isAuthenticated()) {
+        // Devuelve los datos del usuario autenticado
+        res.json({ user: req.user, isAuthenticated: true });
+    } else {
+        res.status(401).json({ isAuthenticated: false });
+    }
+});
 
 export default router;
