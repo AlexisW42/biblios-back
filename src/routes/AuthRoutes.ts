@@ -3,8 +3,8 @@ import { register, login, logout } from "../controllers/AuthController";
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
-router.post("/logout", logout);
+router.post("/api/register", register);
+router.post("/api/login", login);
+router.post("/api/logout", logout);
 
 export default router;

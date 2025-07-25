@@ -9,11 +9,17 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { isAuthenticated } from "./middleware/isAuthenticated"; 
 import { Pool } from "pg";
+import cors from "cors";
 
 const main = async () => {
     const app = express();
     const PORT = process.env.PORT || 3000;
-    
+
+    app.use(cors({
+        origin: "http://localhost:5173", // o "*" para cualquier origen (menos seguro)
+        credentials: true
+    }));
+        
     // Verificación de seguridad para el Session Secret
     if (!process.env.SESSION_SECRET) {
         console.error("FATAL ERROR: SESSION_SECRET no está definido en las variables de entorno.");
