@@ -57,7 +57,7 @@ const main = async () => {
     app.use("/auth", authRoutes);
 
     // Rutas protegidas, ahora usando nuestro middleware `isAuthenticated`
-    app.use("/api", isAuthenticated, protectedRoutes);
+    // app.use("/api", isAuthenticated, protectedRoutes);
 
     app.listen(PORT, () => {
         console.log(`Servidor Express corriendo en el puerto ${PORT}`);
